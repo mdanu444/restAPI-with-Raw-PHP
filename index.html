@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REST API</title>
+    <link rel="stylesheet" href="https://pro.fontawesome.com/releases/v5.10.0/css/all.css" integrity="sha384-AYmEC3Yw5cVb3ZcuHtOA93w35dYTsvhLPVnYs9eStHfGJvOvKxVfELGroGkvsg+p" crossorigin="anonymous"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="shower">
+        <div class="spinner-border text-success" role="status">
+            <span class="sr-only"></span>
+        </div>
+    </div>
+    <section id="container">
+        <div id="headerSection">
+            <h1 class="text-center text-uppercase h2">Rest API CRUD <i class="far fa-search"></i></h1>
+            <input type="search" id="search" name="search" class="text-center form-control border-primary" placeholder="Search Here...">
+            <div >
+                <form action="" class="row ml-auto mr-auto" method="post" id="inserFORM">
+                  <div id="inserSection">
+                    <div class="col-3">Name: <input name="sname" type="text" class="form-control"></div>
+                    <div class="col-3">Age: <input name="sage" type="number" class="form-control"></div>
+                    <div class="col-3">City: <input name="scity" type="text" class="form-control"></div>
+                    <div class="col-3"><input value="Save" type="submit" class="form-control btn btn-dark btn"></div></div>
+                </form>
+            </div>
+        </div>
+        <div class="container">
+            <table class="table table-striped">
+                <thead>
+                  <tr>
+                    <th>SL.</th>
+                    <th>Name</th>
+                    <th>Age</th>
+                    <th>City</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                  </tr>
+                </thead>
+                <tbody id="tbl-loader">
+                  
+                </tbody>
+              </table>
+        </div>
+    </section> 
+
+
+  
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLabel">Modal title</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form action="" method="post" id="edit-form" class="form-data">
+          <div>Name: <input name="sname" type="text" id="edit-name" class="form-control"></div>
+          <div>Age: <input name="sage" type="text" id="edit-age"class="form-control"></div>
+          <div>City: <input name="scity" type="text"id="edit-city" class="form-control"></div>
+          <input type="text"id="edit-id" name="sid" class="form-control" hidden>
+      
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <input type="submit" id="edit-submit" value="Update" class="btn btn-primary"></form>
+      </div>
+    </div>
+  </div>
+</div>
+
+        
+
+
+<script>
+
+$("#search").hide();
+$(".fa-search").click(function(){
+  $("#search").slideToggle();
+});
+  function jsonFromForm(formArray){
+    var myArray = $(formArray).serializeArray();
+    var object = {};
+    for(i = 0; i < myArray.length; i++){
+      object[myArray[i].name] = myArray[i].value;
+    }
+    json = JSON.stringify(object);
+    return json;
+  }
+// Table Loader
+$("#shower").hide();
+function tableLoader(){
+  $("#tbl-loader").html("");
+$.ajax({
+    url: "http://localhost/rest/fetch_all.php", 
+    type: "get", 
+    beforeSend: function(){
+      
+        $("#shower").show("slow");
+    },
+    success: function(data){
+        $("#shower").hide();
+        let i = 1;
+        $.each(data, function(index, value){
+        
+        $("#tbl-loader").append(`
+        <tr>
+                    <td>${i}</td>
+                    <td>${value.name}</td>
+                    <td>${value.age}</td>
+                    <td>${value.city}</td>
+                    <td><button class="btn edit-btn btn-sm btn-success" data-eid="${value.id}"  data-bs-toggle="modal" data-bs-target="#exampleModal">Edit</button></td>
+                    <td><a id="btn-delete" class="btn btn-sm btn-danger" data-did="${value.id}">Delete</a></td>
+                  </tr>
+        `);
+        i += 1;
+    });
+    }
+});
+}
+tableLoader()
+
+// model view and get single data
+$(document).on("click",".edit-btn", function(){
+    let requestedID = $(this).data("eid");
+    let myobject = {sid:requestedID};
+    let myjson = JSON.stringify(myobject);
+    $.ajax({
+    url: "http://localhost/rest/fetch_single.php", 
+    type: "post", 
+    data: myjson,
+    success: function(data){
+     $.each(data, function(index, value){
+      $("#edit-name").val(value.name);
+      $("#edit-age").val(value.age);
+      $("#edit-city").val(value.city);
+      $("#edit-id").val(value.id);
+      
+    });
+  }
+});
+})
+
+// update data
+$(document).on("submit","#edit-form", function(e){
+  e.preventDefault();
+  let myobject = jsonFromForm("#edit-form");
+
+    $.ajax({
+    url: "http://localhost/rest/update.php", 
+    type: "post", 
+    data: myobject,
+    success: function(data){
+     $("body").append(`
+     <span class='alert alert-success' role='alert'>${data.Messege}</span>
+     `);
+     $("#exampleModal").hide();
+     $(".modal-backdrop").hide();
+     tableLoader()
+     $(".alert").fadeOut(5000);
+     
+    }
+});
+})
+
+// Delete data
+$(document).on("click","#btn-delete", function(e){
+  e.preventDefault();
+  let confirmer = confirm("Are you sure to delete !");
+  if(confirmer == true){
+
+  
+  let id = $(this).data("did");
+  let obj = {sid: id}; 
+  let json = JSON.stringify(obj);
+
+    $.ajax({
+    url: "http://localhost/rest/delete.php", 
+    type: "post", 
+    data: json,
+    success: function(data){
+     $("body").append(`
+     <span class='alert alert-danger' role='alert'>${data.Messege}</span>
+     `);
+     $("#exampleModal").hide();
+     $(".modal-backdrop").hide();
+     tableLoader()
+     $(".alert").fadeOut(5000);
+     
+    }
+});
+}
+})
+
+
+//insert data
+$(document).on("submit","#inserFORM", function(e){
+  e.preventDefault();
+  let myobject = jsonFromForm("#inserFORM");
+  $(this).trigger("reset");
+    $.ajax({
+    url: "http://localhost/rest/insert.php", 
+    type: "post", 
+    data: myobject,
+    success: function(data){
+     $("body").append(`
+     <span class='alert alert-success' role='alert'>${data.Messege}</span>
+     `);
+     $("#exampleModal").hide();
+     $(".modal-backdrop").hide();
+     tableLoader()
+     $(".alert").fadeOut(5000);
+     
+    }
+});
+})
+
+// search data
+$(document).on("keyup", "#search", function(){
+  $("#tbl-loader").html("");
+  let searchValue = $(this).val();
+if(searchValue != ""){
+  let searchObj = {ssearch: searchValue};
+  let searchjson = JSON.stringify(searchObj);
+$.ajax({
+    url: "http://localhost/rest/search.php", 
+    type: "post", 
+    data: searchjson,
+    success: function(data){
+        let i = 1;
+        $.each(data, function(index, value){
+        
+        $("#tbl-loader").append(`
+        <tr>
+                    <td>${i}</td>
+                    <td>${value.name}</td>
+                    <td>${value.age}</td>
+                    <td>${value.city}</td>
+                    <td><button class="btn edit-btn btn-sm btn-success" data-eid="${value.id}"  data-bs-toggle="modal" data-bs-target="#exampleModal">Edit</button></td>
+                    <td><a id="btn-delete" class="btn btn-sm btn-danger" data-did="${value.id}">Delete</a></td>
+                  </tr>
+        `);
+        i += 1;
+    });
+    }
+});
+}else{
+  tableLoader();
+}
+});
+
+
+</script>
+
+
+</body>
+</html>
